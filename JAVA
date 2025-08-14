@@ -1,0 +1,105 @@
+document.addEventListener('DOMContentLoaded', function() {
+    // Get DOM elements
+    const loanAmountSlider = document.getElementById('loan-amount');
+    const interestRateSlider = document.getElementById('interest-rate');
+    const loanTenureSlider = document.getElementById('loan-tenure');
+    
+    const loanAmountValue = document.getElementById('loan-amount-value');
+    const interestRateValue = document.getElementById('interest-rate-value');
+    const loanTenureValue = document.getElementById('loan-tenure-value');
+    
+    const calculateBtn = document.getElementById('calculate-btn');
+    
+    const emiAmount = document.getElementById('emi-amount');
+    const totalInterest = document.getElementById('total-interest');
+    const totalPayment = document.getElementById('total-payment');
+    
+    const amortizationTable = document.getElementById('amortization-table').getElementsByTagName('tbody')[0];
+    
+    // Update displayed values when sliders change
+    loanAmountSlider.addEventListener('input', function() {
+        loanAmountValue.textContent = formatCurrency(this.value);
+    });
+    
+    interestRateSlider.addEventListener('input', function() {
+        interestRateValue.textContent = this.value + '%';
+    });
+    
+    loanTenureSlider.addEventListener('input', function() {
+        loanTenureValue.textContent = this.value;
+    });
+    
+    // Calculate EMI when button is clicked
+    calculateBtn.addEventListener('click', calculateEMI);
+    
+    // Calculate on page load
+    calculateEMI();
+    
+    // Main calculation function
+    function calculateEMI() {
+        const principal = parseFloat(loanAmountSlider.value);
+        const rate = parseFloat(interestRateSlider.value);
+        const tenure = parseFloat(loanTenureSlider.value);
+        
+        // Monthly Interest Rate
+        const monthlyRate = rate / 12 / 100;
+        
+        // Loan Tenure in Months
+        const tenureMonths = tenure * 12;
+        
+        // EMI Calculation
+        const emi = principal * monthlyRate * Math.pow(1 + monthlyRate, tenureMonths) / 
+                   (Math.pow(1 + monthlyRate, tenureMonths) - 1);
+        
+        // Total Payment
+        const total = emi * tenureMonths;
+        
+        // Total Interest
+        const interest = total - principal;
+        
+        // Update results
+        emiAmount.textContent = '₹' + formatCurrency(Math.round(emi));
+        totalInterest.textContent = '₹' + formatCurrency(Math.round(interest));
+        totalPayment.textContent = '₹' + formatCurrency(Math.round(total));
+        
+        // Generate Amortization Schedule
+        generateAmortizationSchedule(principal, rate, tenure, emi);
+    }
+    
+    // Generate Amortization Schedule
+    function generateAmortizationSchedule(principal, rate, tenure, emi) {
+        // Clear existing table rows
+        amortizationTable.innerHTML = '';
+        
+        const monthlyRate = rate / 12 / 100;
+        const tenureMonths = tenure * 12;
+        let balance = principal;
+        
+        for (let month = 1; month <= tenureMonths; month++) {
+            const interestForMonth = balance * monthlyRate;
+            const principalForMonth = emi - interestForMonth;
+            balance -= principalForMonth;
+            
+            // Ensure balance doesn't go negative
+            if (balance < 0) balance = 0;
+            
+            // Create table row
+            const row = amortizationTable.insertRow();
+            
+            // Add cells
+            row.insertCell(0).textContent = month;
+            row.insertCell(1).textContent = '₹' + formatCurrency(Math.round(emi));
+            row.insertCell(2).textContent = '₹' + formatCurrency(Math.round(principalForMonth));
+            row.insertCell(3).textContent = '₹' + formatCurrency(Math.round(interestForMonth));
+            row.insertCell(4).textContent = '₹' + formatCurrency(Math.round(balance));
+            
+            // Stop if loan is fully paid
+            if (balance <= 0) break;
+        }
+    }
+    
+    // Format currency with commas
+    function formatCurrency(num) {
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+});
